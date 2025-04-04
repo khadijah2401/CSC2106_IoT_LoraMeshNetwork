@@ -83,12 +83,14 @@ void loop() {
         Serial.print(" | Temp: "); Serial.print(data.temp);
         Serial.print(" | Hum: "); Serial.print(data.hum);
         Serial.print(" | Time: "); Serial.print(data.timestamp);
-        Serial.print(" | Hops: ");
-        for (int i = 0; i < p.hopCount; i++) {
-          Serial.print(p.hops[i]);
-          if (i < p.hopCount - 1) Serial.print(" → ");
-        }
-        Serial.println();
+         Serial.print(" | Hops: ");
+            for (int i = 0; i < p.hopCount; i++)
+            {
+                Serial.print(p.hops[i]);
+                if (i < p.hopCount - 1)
+                    Serial.print(" → ");
+            }
+            Serial.println();
 
         // ✅ Forward to Node 0
         rf95.send((uint8_t*)&p, sizeof(Packet));
