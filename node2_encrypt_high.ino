@@ -63,9 +63,9 @@ void loop() {
   if (millis() - lastSend > 7000 + random(0, 3000)) {
     Packet p = {
       myID, msgCounter++, TTL,
-      random(10, 100),
-      random(2000, 3500) / 100.0,
-      random(4000, 8000) / 100.0,
+      random(50, 100),
+      random(3000, 3500) / 100.0,
+      random(6000, 8000) / 100.0,
       millis() / 1000,
       {}, 0
     };
