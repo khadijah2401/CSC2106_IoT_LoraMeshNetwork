@@ -21,18 +21,22 @@ byte aes_iv[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 void resetIV() {
   for (int i = 0; i < 16; i++) aes_iv[i] = i;
 }
-struct __attribute__((packed)) Packet {
-  uint8_t senderId;
-  uint16_t messageId;
-  uint8_t ttl;
+
+struct Payload {
   float pm25;
   float temp;
   float hum;
   uint32_t timestamp;
-  uint8_t hops[5];
-  uint8_t hopCount;
 };
 
+struct Packet {
+  uint8_t senderId;
+  uint16_t messageId;
+  uint8_t ttl;
+  uint8_t hops[5];
+  uint8_t hopCount;
+  byte encryptedPayload[sizeof(Payload)];
+};
 
 void setup() {
   Serial.begin(9600);
@@ -47,44 +51,42 @@ void setup() {
 
   Serial.println("📡 Node 3 (Receiver) ready");
   Serial.print("Packet size: ");
-  Serial.println(sizeof(Packet));  // Should be 29
+  Serial.println(sizeof(Packet));
 }
 
 void loop() {
   if (rf95.available()) {
     byte buf[64] = {0}; uint8_t len = sizeof(buf);
     if (rf95.recv(buf, &len)) {
-byte decrypted[26];
-resetIV();  // right before aesLib.encrypt()
-
-aesLib.decrypt(buf, 26, decrypted, aes_key, 128, aes_iv);
 
       Packet p;
-      memcpy(&p, decrypted,26);
+      memcpy(&p, buf, sizeof(Packet));
 
+      // Decrypt the payload
+      resetIV();
+      byte decryptedPayload[sizeof(Payload)];
+      aesLib.decrypt(p.encryptedPayload, sizeof(Payload), decryptedPayload, aes_key, 128, aes_iv);
+
+      Payload data;
+      memcpy(&data, decryptedPayload, sizeof(Payload));
+
+      // Print decrypted content
       Serial.print("📥 Decrypted time: ");
-      Serial.print(p.timestamp);
-          Serial.print("📥 Decrypted senderId: ");
-      
+      Serial.print(data.timestamp);
+      Serial.print(" | Node: ");
       Serial.print(p.senderId);
-          Serial.print("📥 Decrypted message id: ");
+      Serial.print(" | MsgID: ");
       Serial.print(p.messageId);
-          Serial.print("📥 Decrypted pm25: ");
-      Serial.print(p.pm25);
-                Serial.print("📥 Decrypted temp: ");
+      Serial.print(" | PM2.5: ");
+      Serial.print(data.pm25);
+      Serial.print(" | Temp: ");
+      Serial.print(data.temp);
+      Serial.print(" | Hum: ");
+      Serial.print(data.hum);
+      Serial.print(" | Hop Count: ");
+      Serial.println(p.hopCount);
 
-      Serial.print(p.temp);
-                      Serial.print("📥 Decrypted hum: ");
-
-      Serial.print(p.hum);
-                          
-                            Serial.print("📥 Decrypted hopecount: ");
-
-      Serial.print(p.hopCount);
-  
-
-      Serial.print(" from Node ");
-      Serial.println(p.senderId);
+      
     }
   }
 }

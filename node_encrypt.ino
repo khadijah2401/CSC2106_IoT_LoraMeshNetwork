@@ -5,16 +5,15 @@
 #define RFM95_CS 10
 #define RFM95_RST 9
 #define RFM95_INT 2
-#define RF95_FREQ 901.0
+#define RF95_FREQ 915.0
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 AESLib aesLib;
 
-const uint8_t myID = 2;
+const uint8_t myID = 2; // Change to 3 or 4 for other nodes
 uint16_t msgCounter = 0;
 const int TTL = 5;
 
-// AES Key and IV
 byte aes_key[] = {
   0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
   0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81
@@ -41,25 +40,29 @@ struct Packet {
   byte encryptedPayload[sizeof(Payload)];
 };
 
+String seen[20]; int seenIndex = 0;
+bool isDuplicate(uint8_t id, uint16_t mid) {
+  String tag = String(id) + "-" + String(mid);
+  for (int i = 0; i < 20; i++) if (seen[i] == tag) return true;
+  seen[seenIndex++] = tag; seenIndex %= 20;
+  return false;
+}
+
 void setup() {
   Serial.begin(9600);
   pinMode(RFM95_RST, OUTPUT);
   digitalWrite(RFM95_RST, HIGH); delay(10);
   digitalWrite(RFM95_RST, LOW); delay(10);
   digitalWrite(RFM95_RST, HIGH); delay(10);
-
-  rf95.init();
-  rf95.setFrequency(RF95_FREQ);
-  rf95.setTxPower(14, false);
-
-  Serial.println("📡 Node 2 (Sender) ready");
-  Serial.print("Packet size: ");
-  Serial.println(sizeof(Packet));  // Should be ~35
+  rf95.init(); rf95.setFrequency(RF95_FREQ); rf95.setTxPower(14, false);
+  Serial.print("🔁 Node "); Serial.print(myID); Serial.println(" Ready (Encrypted Flooding)");
+  randomSeed(analogRead(0));
 }
 
 void loop() {
   static unsigned long lastSend = 0;
 
+  // Simulate sending a new message
   if (millis() - lastSend > 10000) {
     Payload data = {
       random(10, 100),
@@ -69,26 +72,34 @@ void loop() {
     };
 
     byte encrypted[sizeof(Payload)];
-    resetIV();  // reset IV before every encryption
+    resetIV();
     aesLib.encrypt((byte*)&data, sizeof(Payload), encrypted, aes_key, 128, aes_iv);
 
     Packet p = {
       myID, msgCounter++, TTL,
-      {},  // hops
-      0    // hopCount
+      {}, 0
     };
     memcpy(p.encryptedPayload, encrypted, sizeof(Payload));
 
-    rf95.send((uint8_t*)&p, sizeof(Packet));
-    rf95.waitPacketSent();
-
-    Serial.println("📝 Cleartext payload:");
-    Serial.print("  timestamp: "); Serial.println(data.timestamp);
-    Serial.print("  messageId: "); Serial.println(p.messageId);
-    Serial.print("  pm25: "); Serial.println(data.pm25);
-    Serial.print("  temp: "); Serial.println(data.temp);
-    Serial.print("  hum: "); Serial.println(data.hum);
-
+    rf95.send((uint8_t*)&p, sizeof(Packet)); rf95.waitPacketSent();
+    Serial.print("📤 Sent MsgID "); Serial.println(p.messageId);
     lastSend = millis();
+  }
+
+  // Relay received packets
+  if (rf95.available()) {
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN]; uint8_t len = sizeof(buf);
+    if (rf95.recv(buf, &len)) {
+      Packet p; memcpy(&p, buf, sizeof(Packet));
+      if (!isDuplicate(p.senderId, p.messageId)) {
+        if (p.ttl > 0 && p.hopCount < 5) {
+          delay(random(100, 400));
+          p.hops[p.hopCount++] = myID;
+          p.ttl--;
+          rf95.send((uint8_t*)&p, sizeof(Packet)); rf95.waitPacketSent();
+          Serial.print("🔁 Forwarded MsgID "); Serial.println(p.messageId);
+        }
+      }
+    }
   }
 }
