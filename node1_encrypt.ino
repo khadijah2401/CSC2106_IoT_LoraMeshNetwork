@@ -72,25 +72,25 @@ void loop() {
 
         // Decrypt payload
         Payload data;
-        byte decrypted[sizeof(Payload)];
-        resetIV();
-        aesLib.decrypt(p.encryptedPayload, sizeof(Payload), decrypted, aes_key, 128, aes_iv);
-        memcpy(&data, decrypted, sizeof(Payload));
+        // byte decrypted[sizeof(Payload)];
+        // resetIV();
+        // aesLib.decrypt(p.encryptedPayload, sizeof(Payload), decrypted, aes_key, 128, aes_iv);
+        // memcpy(&data, decrypted, sizeof(Payload));
 
-        Serial.print("Node "); Serial.print(p.senderId);
-        Serial.print(" (MsgID "); Serial.print(p.messageId); Serial.print("): ");
-        Serial.print("PM2.5: "); Serial.print(data.pm25);
-        Serial.print(" | Temp: "); Serial.print(data.temp);
-        Serial.print(" | Hum: "); Serial.print(data.hum);
-        Serial.print(" | Time: "); Serial.print(data.timestamp);
-         Serial.print(" | Hops: ");
-            for (int i = 0; i < p.hopCount; i++)
-            {
-                Serial.print(p.hops[i]);
-                if (i < p.hopCount - 1)
-                    Serial.print(" → ");
-            }
-            Serial.println();
+        // Serial.print("Node "); Serial.print(p.senderId);
+        // Serial.print(" (MsgID "); Serial.print(p.messageId); Serial.print("): ");
+        // Serial.print("PM2.5: "); Serial.print(data.pm25);
+        // Serial.print(" | Temp: "); Serial.print(data.temp);
+        // Serial.print(" | Hum: "); Serial.print(data.hum);
+        // Serial.print(" | Time: "); Serial.print(data.timestamp);
+        //  Serial.print(" | Hops: ");
+        //     for (int i = 0; i < p.hopCount; i++)
+        //     {
+        //         Serial.print(p.hops[i]);
+        //         if (i < p.hopCount - 1)
+        //             Serial.print(" → ");
+        //     }
+        //     Serial.println();
 
         // ✅ Forward to Node 0
         rf95.send((uint8_t*)&p, sizeof(Packet));
