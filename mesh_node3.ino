@@ -10,7 +10,7 @@
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 AESLib aesLib;
 
-const uint8_t myID = 2;
+const uint8_t myID = 3;
 uint16_t msgCounter = 0;
 const int TTL = 5;
 
