@@ -60,10 +60,29 @@ resetIV();  // right before aesLib.encrypt()
 aesLib.decrypt(buf, 26, decrypted, aes_key, 128, aes_iv);
 
       Packet p;
-      memcpy(&p, decrypted, sizeof(Packet));
+      memcpy(&p, decrypted,26);
 
-      Serial.print("📥 Decrypted MsgID: ");
+      Serial.print("📥 Decrypted time: ");
+      Serial.print(p.timestamp);
+          Serial.print("📥 Decrypted senderId: ");
+      
+      Serial.print(p.senderId);
+          Serial.print("📥 Decrypted message id: ");
       Serial.print(p.messageId);
+          Serial.print("📥 Decrypted pm25: ");
+      Serial.print(p.pm25);
+                Serial.print("📥 Decrypted temp: ");
+
+      Serial.print(p.temp);
+                      Serial.print("📥 Decrypted hum: ");
+
+      Serial.print(p.hum);
+                          
+                            Serial.print("📥 Decrypted hopecount: ");
+
+      Serial.print(p.hopCount);
+  
+
       Serial.print(" from Node ");
       Serial.println(p.senderId);
     }

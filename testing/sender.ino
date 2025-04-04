@@ -62,27 +62,47 @@ void loop() {
       random(10, 100),
       random(2000, 3500) / 100.0,
       random(4000, 8000) / 100.0,
-      millis() / 1000, {}, 0
+      millis() / 1000, 
+      {},
+       0
     };
 
     byte cleartext[64] = {0};
     memcpy(cleartext, &p, sizeof(Packet));
 
     Serial.println("📝 Cleartext payload:");
-    Serial.print("  messageId: ");
-    Serial.println(p.messageId);
+    Serial.print("  timestamp: ");
+    Serial.println(p.timestamp);
+        Serial.println(p.messageId);
+
 
  byte encrypted[26];
  resetIV();  // right before aesLib.encrypt()
 
 aesLib.encrypt((byte*)&p, 26, encrypted, aes_key, 128, aes_iv);
-rf95.send(encrypted, sizeof(encrypted));
+rf95.send(encrypted, 26);
 
-    rf95.send(encrypted, sizeof(Packet));
     rf95.waitPacketSent();
 
-    Serial.print("📤 Encrypted & sent MsgID: ");
-    Serial.println(p.messageId);
+    Serial.print("📥 Decrypted time: ");
+      Serial.print(p.timestamp);
+          Serial.print("📥 Decrypted senderId: ");
+      
+      Serial.print(p.senderId);
+          Serial.print("📥 Decrypted message id: ");
+      Serial.print(p.messageId);
+          Serial.print("📥 Decrypted pm25: ");
+      Serial.print(p.pm25);
+                Serial.print("📥 Decrypted temp: ");
+
+      Serial.print(p.temp);
+                      Serial.print("📥 Decrypted hum: ");
+
+      Serial.print(p.hum);
+                          
+                            Serial.print("📥 Decrypted hopecount: ");
+
+      Serial.print(p.hopCount);
 
     lastSend = millis();
   }
