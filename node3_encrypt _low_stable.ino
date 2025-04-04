@@ -10,11 +10,10 @@
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 AESLib aesLib;
 
-const uint8_t myID = 3;  // Change per node
+const uint8_t myID = 2; // Change to 3 or 4 for other nodes
 uint16_t msgCounter = 0;
 const int TTL = 5;
 
-// AES Key and IV
 byte aes_key[] = {
   0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
   0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81
@@ -25,16 +24,20 @@ void resetIV() {
   for (int i = 0; i < 16; i++) aes_iv[i] = i;
 }
 
-struct __attribute__((packed)) Packet {
-  uint8_t senderId;
-  uint16_t messageId;
-  uint8_t ttl;
+struct Payload {
   float pm25;
   float temp;
   float hum;
   uint32_t timestamp;
+};
+
+struct Packet {
+  uint8_t senderId;
+  uint16_t messageId;
+  uint8_t ttl;
   uint8_t hops[5];
   uint8_t hopCount;
+  byte encryptedPayload[sizeof(Payload)];
 };
 
 String seen[20]; int seenIndex = 0;
@@ -51,61 +54,51 @@ void setup() {
   digitalWrite(RFM95_RST, HIGH); delay(10);
   digitalWrite(RFM95_RST, LOW); delay(10);
   digitalWrite(RFM95_RST, HIGH); delay(10);
-
   rf95.init(); rf95.setFrequency(RF95_FREQ); rf95.setTxPower(14, false);
-  Serial.print("🔐 Node "); Serial.print(myID); Serial.println(" Ready (Encrypted Flooding)");
+  Serial.print("🔁 Node "); Serial.print(myID); Serial.println(" Ready (Encrypted Flooding)");
   randomSeed(analogRead(0));
 }
 
 void loop() {
   static unsigned long lastSend = 0;
 
-  if (millis() - lastSend > 7000 + random(0, 3000)) {
-    Packet p = {
-      myID, msgCounter++, TTL,
-      100,
-      3500 / 100.0,
-      8000 / 100.0,
-      millis() / 1000,
-      {}, 0
+  // Simulate sending a new message
+  if (millis() - lastSend > 10000) {
+    Payload data = {
+      10,
+      2000/ 100.0,
+      4000/ 100.0,
+      millis() / 1000
     };
 
-    byte cleartext[64] = {0};
-    memcpy(cleartext, &p, sizeof(Packet));
-
-    byte encrypted[64];
+    byte encrypted[sizeof(Payload)];
     resetIV();
-    aesLib.encrypt(cleartext, sizeof(Packet), encrypted, aes_key, 128, aes_iv);
+    aesLib.encrypt((byte*)&data, sizeof(Payload), encrypted, aes_key, 128, aes_iv);
 
-    rf95.send(encrypted, sizeof(Packet));
-    rf95.waitPacketSent();
-    Serial.print("📤 Encrypted & Sent MsgID "); Serial.println(p.messageId);
+    Packet p = {
+      myID, msgCounter++, TTL,
+      {}, 0
+    };
+    memcpy(p.encryptedPayload, encrypted, sizeof(Payload));
 
+    rf95.send((uint8_t*)&p, sizeof(Packet)); rf95.waitPacketSent();
+    Serial.print("📤 Sent MsgID "); Serial.println(p.messageId);
     lastSend = millis();
   }
 
+  // Relay received packets
   if (rf95.available()) {
-    uint8_t buf[64]; uint8_t len = sizeof(buf);
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN]; uint8_t len = sizeof(buf);
     if (rf95.recv(buf, &len)) {
-      Packet p;
-      resetIV();
-      aesLib.decrypt(buf, sizeof(Packet), (byte*)&p, aes_key, 128, aes_iv);
-
+      Packet p; memcpy(&p, buf, sizeof(Packet));
+      if (p.senderId == myID) return; 
       if (!isDuplicate(p.senderId, p.messageId)) {
         if (p.ttl > 0 && p.hopCount < 5) {
-          delay(random(100, 400));  // collision avoidance
+          delay(random(100, 400));
           p.hops[p.hopCount++] = myID;
           p.ttl--;
-
-          byte forwardClear[64];
-          memcpy(forwardClear, &p, sizeof(Packet));
-          byte forwardEncrypted[64];
-          resetIV();
-          aesLib.encrypt(forwardClear, sizeof(Packet), forwardEncrypted, aes_key, 128, aes_iv);
-
-          rf95.send(forwardEncrypted, sizeof(Packet));
-          rf95.waitPacketSent();
-          Serial.print("🔁 Forwarded Encrypted MsgID "); Serial.println(p.messageId);
+          rf95.send((uint8_t*)&p, sizeof(Packet)); rf95.waitPacketSent();
+          Serial.print("🔁 Forwarded MsgID "); Serial.println(p.messageId);
         }
       }
     }
