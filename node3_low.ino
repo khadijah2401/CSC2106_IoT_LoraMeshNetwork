@@ -83,7 +83,12 @@ void loop() {
 
   // 🟢 Send sensor data if not paused by pong
   if (now > pongPauseUntil && now - lastSend > 10000) {
-    Payload data = { 10, 20.0, 40.0, now / 1000 };
+    Payload data = {
+      random(10, 50),
+      random(2000, 2500) / 100.0,
+      random(4000, 4500) / 100.0,
+      millis() / 1000
+    };   
     byte encrypted[sizeof(Payload)];
     resetIV();
     aesLib.encrypt((byte*)&data, sizeof(Payload), encrypted, aes_key, 128, aes_iv);
