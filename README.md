@@ -60,10 +60,14 @@ This project implements a scalable and secure IoT mesh network using Arduino nod
 ## 🚀 Setup Instructions
 
 1. Flash the respective `.ino` files to each node using Arduino IDE.
-2. Set up Raspberry Pi to run `serial_script.py` for parsing mesh output.
-3. Deploy WisGate and configure TTN with correct keys.
-4. Use ThingsBoard Rule Chains to decode uplink, handle downlink, and visualize data.
-5. Send `PING` from ThingsBoard Cloud Dashboard to test latency tracking and hop count.
+2. Connect the nodes to the LoRaWAN gateway (WisGate Edge Lite 2).
+3. Connect Receiver and Transmitter to Raspberry Pi:
+    - Plug the transmitter Arduino Uno into USB port 1 /dev/ttyUSB1 of the Raspberry Pi 4 using a USB cable. 
+    - Plug the receiver Arduino Uno into another USB port 0 /dev/ttyUSB0 of the Raspberry Pi 4 using a separate USB cable. 
+4. Set up Raspberry Pi to run `serial_script.py` for parsing mesh output.
+5. Deploy WisGate and configure TTN with correct keys.
+6. Use ThingsBoard Rule Chains to decode uplink, handle downlink, and visualize data.
+7. Send `PING` from ThingsBoard Cloud Dashboard to test latency tracking and hop count.
 
 ---
 
