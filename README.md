@@ -82,7 +82,7 @@ For help:
 - 2301124@sit.singaporetech.edu.sg (Nur Khadijah Afreen Binte Mohamed Jahabar Sadik)
 - 2300892@sit.singaporetech.edu.sg (Choo Jin Quan)
 - 2303340@sit.singaporetech.edu.sg (Toh Hao Yi)
-- 2303403@sit.singaporetech.edu.sg(Ignatius Lim Zheng Liang)
+- 2303403@sit.singaporetech.edu.sg (Ignatius Lim Zheng Liang)
 - 2301119@sit.singaporetech.edu.sg (Tan Ting Xuan, Daryl)
 
 Developed for academic and experimental purposes.
